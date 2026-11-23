@@ -1,0 +1,92 @@
+name: Build plugin packages
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            runner: ubuntu-22.04
+          - target: aarch64-unknown-linux-gnu
+            runner: ubuntu-22.04-arm
+          - target: x86_64-pc-windows-msvc
+            runner: windows-2022
+          - target: x86_64-apple-darwin
+            runner: macos-15-intel
+          - target: aarch64-apple-darwin
+            runner: macos-15
+    defaults:
+      run:
+        shell: bash
+    env:
+      TARGET: ${{ matrix.target }}
+      BINARY: agent2api-wps-lingxi
+      RUST_VERSION: '1.93.1'
+      PYTHONUTF8: '1'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: Install Rust
+        run: rustup toolchain install "$RUST_VERSION" --profile minimal --target "$TARGET"
+      - name: Run unit tests and offline integration tests
+        run: |
+          cargo +"$RUST_VERSION" test --locked --target "$TARGET" -p "$BINARY"
+          cargo +"$RUST_VERSION" build --locked --target "$TARGET" -p "$BINARY"
+          python scripts/test.py --target "$TARGET"
+      - name: Build and package
+        run: |
+          cargo +"$RUST_VERSION" build --locked --release --target "$TARGET" -p "$BINARY"
+          python scripts/package.py --target "$TARGET"
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: ${{ env.BINARY }}-${{ matrix.target }}
+          path: dist/*.zip*
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
+  release:
+    name: Publish tagged release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Verify tag matches the package version
+        run: |
+          python3 - <<'PY'
+          import json, os
+          version = json.load(open('pack.json', encoding='utf-8'))['version']
+          if os.environ['GITHUB_REF_NAME'] != 'v' + version:
+              raise SystemExit('Tag must match pack.json (v' + version + ')')
+          PY
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          path: release-assets
+          merge-multiple: true
+      - name: Verify packages and publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          cd release-assets
+          for checksum in *.zip.sha256; do sha256sum --check "$checksum"; done
+          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --verify-tag --generate-notes -- *.zip *.zip.sha256

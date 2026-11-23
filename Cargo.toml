@@ -1,0 +1,16 @@
+[workspace]
+resolver = "2"
+members = ["crates/wps-lingxi", "crates/provider-sdk", "crates/provider-protocol"]
+
+[workspace.package]
+edition = "2021"
+rust-version = "1.88"
+license-file = "LICENSE"
+repository = "https://github.com/wyq2822875262/agent2api-wps-lingxi"
+
+[profile.release]
+panic = "unwind"
+lto = true
+codegen-units = 1
+opt-level = "s"
+strip = true
