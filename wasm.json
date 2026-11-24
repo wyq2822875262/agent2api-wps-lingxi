@@ -1,0 +1,24 @@
+{
+  "abi": 1,
+  "verified": false,
+  "requires": [
+    "http.v1",
+    "http.timeout.v1",
+    "accounts.cas.v1",
+    "accounts.identity.v1",
+    "catalog.v1",
+    "catalog.accounts.v1",
+    "chat.stream.v1",
+    "login.forms.v1",
+    "clock.v1",
+    "errors.v1",
+    "checkin.rolling.v1",
+    "locks.v1",
+    "random.v1"
+  ],
+  "origins": [
+    "https://lingxi.kdocs.cn"
+  ],
+  "memory_mib": 128,
+  "concurrency": 8
+}

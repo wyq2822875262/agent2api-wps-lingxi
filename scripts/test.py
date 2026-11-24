@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 """Run the standalone plugin's RPC tests with a native debug build."""
 import argparse
+import json
 import subprocess
 import sys
 from pathlib import Path
 
-from package import ROOT, load_manifest
+from package import ROOT
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    manifest = load_manifest()
+    manifest = json.loads((ROOT / 'scripts/legacy-pack.json').read_text('utf-8'))
     parser.add_argument('--target', required=True, choices=tuple(manifest['entry']))
     args = parser.parse_args()
     target = args.target

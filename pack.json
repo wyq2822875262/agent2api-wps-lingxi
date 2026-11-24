@@ -1,7 +1,7 @@
 {
   "id": "agent2api-wps-lingxi",
   "name": "WPS 灵犀",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "protocol": 1,
   "homepage": "https://github.com/wyq2822875262/agent2api-wps-lingxi",
   "providers": [
@@ -13,10 +13,6 @@
     }
   ],
   "entry": {
-    "x86_64-pc-windows-msvc": "bin/agent2api-wps-lingxi.exe",
-    "aarch64-apple-darwin": "bin/agent2api-wps-lingxi",
-    "x86_64-apple-darwin": "bin/agent2api-wps-lingxi",
-    "x86_64-unknown-linux-gnu": "bin/agent2api-wps-lingxi",
-    "aarch64-unknown-linux-gnu": "bin/agent2api-wps-lingxi"
+    "wasm32-unknown-unknown": "wps_lingxi.wasm"
   }
 }
