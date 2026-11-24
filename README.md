@@ -6,9 +6,9 @@
 
 ## 安装与升级
 
-在 Agent2API v3.5.1 的「插件管理」中导入 `agent2api-wps-lingxi-0.1.3-wasm32-unknown-unknown.zip`，再到「模型管理」刷新目录。安装包可跨系统使用。WASM 包沿用原包 ID、提供商 ID 和账号凭证结构。升级时直接导入新版 ZIP。
+在 Agent2API v3.5.1 的「插件管理」中导入 `agent2api-wps-lingxi-0.1.4-wasm32-unknown-unknown.zip`，再到「模型管理」刷新目录。安装包可跨系统使用。WASM 包沿用原包 ID、提供商 ID 和账号凭证结构。升级时直接导入新版 ZIP。
 
-从源码构建会在 `dist/` 生成未签名的安装包和 SHA-256 文件。也可从成功的 GitHub Actions 运行下载 `plugin-wasm` 构建产物，并导入其中的插件 ZIP。 [构建记录](https://github.com/wyq2822875262/agent2api-wps-lingxi/actions/workflows/build.yml)
+从 [GitHub Releases](https://github.com/wyq2822875262/agent2api-wps-lingxi/releases/latest) 下载安装包和 SHA-256 校验文件。每次推送都会触发 GitHub Actions 构建和测试。推送与插件版本匹配的 `v` 标签时，Actions 会把同一次构建生成的文件发布到对应 Release。 [构建记录](https://github.com/wyq2822875262/agent2api-wps-lingxi/actions/workflows/build.yml)
 
 ## 构建与验证
 

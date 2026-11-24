@@ -21,6 +21,9 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.12'
+      - name: Check release tag against plugin version
+        if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
+        run: test "$GITHUB_REF_NAME" = "v$(jq -r .version pack.json)"
       - name: Install Rust and WASM target
         run: rustup toolchain install "$RUST_VERSION" --profile minimal --target "$TARGET"
       - name: Test and build
@@ -38,3 +41,48 @@ jobs:
           if-no-files-found: error
           compression-level: 0
           retention-days: 30
+
+  release:
+    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
+    needs: wasm
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    concurrency:
+      group: release-${{ github.ref }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: plugin-wasm
+          path: dist
+      - name: Publish verified files to GitHub Releases
+        working-directory: dist
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="$GITHUB_REF_NAME"
+          package="${GH_REPO#*/}-${tag#v}-wasm32-unknown-unknown.zip"
+          sha256sum --check "$package.sha256"
+
+          if ! gh release view "$tag" --json tagName > /dev/null; then
+            notes="将下方的 $package 导入 Agent2API 的插件管理。安装包由 GitHub Actions 构建，SHA-256 校验文件随包发布。构建记录见 $GITHUB_SERVER_URL/$GH_REPO/actions/runs/$GITHUB_RUN_ID 。"
+            gh release create "$tag" --verify-tag --draft --title "${GH_REPO#*/} $tag" --notes "$notes"
+          fi
+          release="$RUNNER_TEMP/release.json"
+          gh release view "$tag" --json assets,isDraft > "$release"
+          for file in "$package" "$package.sha256"; do
+            if jq -e --arg file "$file" 'any(.assets[]; .name == $file)' "$release" > /dev/null; then
+              gh release download "$tag" --pattern "$file" --dir "$RUNNER_TEMP/published"
+              cmp "$file" "$RUNNER_TEMP/published/$file"
+            else
+              gh release upload "$tag" "$file"
+            fi
+          done
+          if jq -e '.isDraft' "$release" > /dev/null; then
+            gh release edit "$tag" --draft=false
+          fi
